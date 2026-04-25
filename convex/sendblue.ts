@@ -3,7 +3,8 @@ import { v } from "convex/values";
 
 import { components, internal } from "./_generated/api";
 import { internalAction, internalMutation } from "./_generated/server";
-import { chatAgent } from "./chat";
+import { BASE_INSTRUCTIONS, buildSystemContext, chatAgent } from "./chat";
+import { CREATOR_PHONE_NUMBER } from "./lib/creator";
 import { buildToolsFor } from "./tools";
 
 const SENDBLUE_API_BASE = "https://api.sendblue.com/api";
@@ -74,6 +75,24 @@ async function markRead(toNumber: string) {
 export const ingestInboundMessage = internalMutation({
   args: { phoneNumber: v.string(), content: v.string() },
   handler: async (ctx, { phoneNumber, content }) => {
+    if (phoneNumber === CREATOR_PHONE_NUMBER) {
+      const inbox = await ctx.db.query("creatorInbox").first();
+      const reply = `Reply from Finnear's creator:\n${content}`;
+      if (inbox) {
+        await ctx.scheduler.runAfter(0, internal.sendblue.sendOutbound, {
+          phoneNumber: inbox.pendingUserPhone,
+          content: reply,
+        });
+      } else {
+        await ctx.scheduler.runAfter(0, internal.sendblue.sendOutbound, {
+          phoneNumber: CREATOR_PHONE_NUMBER,
+          content:
+            "No pending user message to reply to. Wait for someone to forward a message before replying.",
+        });
+      }
+      return;
+    }
+
     const existing = await ctx.db
       .query("smsUser")
       .withIndex("by_phone", (q) => q.eq("phoneNumber", phoneNumber))
@@ -136,6 +155,13 @@ export const sendCannedReply = internalAction({
   },
 });
 
+export const sendOutbound = internalAction({
+  args: { phoneNumber: v.string(), content: v.string() },
+  handler: async (_ctx, { phoneNumber, content }) => {
+    await sendSendblueMessage(phoneNumber, content);
+  },
+});
+
 export const respondToSms = internalAction({
   args: {
     phoneNumber: v.string(),
@@ -155,10 +181,16 @@ export const respondToSms = internalAction({
     }
 
     const tools = await buildToolsFor(ctx, phoneNumber);
+
+    const meta = await ctx.runQuery(internal.userMetadata.getByUserKey, {
+      userKey: phoneNumber,
+    });
+    const system = `${BASE_INSTRUCTIONS}\n\n${buildSystemContext(meta)}`;
+
     const result = await chatAgent.generateText(
       ctx,
       { threadId },
-      { promptMessageId, tools },
+      { promptMessageId, tools, system },
     );
 
     const reply = result.text.trim();

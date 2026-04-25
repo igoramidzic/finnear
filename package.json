@@ -45,6 +45,7 @@
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
     "convex": "^1.31.6",
+    "cron-parser": "^5.5.0",
     "date-fns": "^2.30.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.11.0",
@@ -57,6 +58,7 @@
     "svix": "^1.92.2",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
+    "tz-lookup": "^6.1.25",
     "zod": "^3.22.4"
   },
   "devDependencies": {
