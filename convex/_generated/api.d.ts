@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as clerk from "../clerk.js";
 import type * as http from "../http.js";
+import type * as sendblue from "../sendblue.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   clerk: typeof clerk;
   http: typeof http;
+  sendblue: typeof sendblue;
 }>;
 
 /**

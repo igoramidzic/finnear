@@ -48,6 +48,7 @@
     "date-fns": "^2.30.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.11.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-day-picker": "^8.9.1",
     "react-dom": "^18.2.0",

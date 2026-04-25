@@ -7,4 +7,10 @@ export default defineSchema({
     email: v.string(),
     chatThreadId: v.optional(v.string()),
   }).index("by_clerkId", ["clerkId"]),
+
+  smsUser: defineTable({
+    phoneNumber: v.string(),
+    chatThreadId: v.string(),
+    lastMessageAt: v.number(),
+  }).index("by_phone", ["phoneNumber"]),
 });
