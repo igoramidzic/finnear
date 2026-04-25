@@ -13,6 +13,10 @@ import type * as chat from "../chat.js";
 import type * as clerk from "../clerk.js";
 import type * as http from "../http.js";
 import type * as sendblue from "../sendblue.js";
+import type * as tools_builtin_index from "../tools/builtin/index.js";
+import type * as tools_index from "../tools/index.js";
+import type * as tools_integrations_index from "../tools/integrations/index.js";
+import type * as tools_integrations_types from "../tools/integrations/types.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +30,10 @@ declare const fullApi: ApiFromModules<{
   clerk: typeof clerk;
   http: typeof http;
   sendblue: typeof sendblue;
+  "tools/builtin/index": typeof tools_builtin_index;
+  "tools/index": typeof tools_index;
+  "tools/integrations/index": typeof tools_integrations_index;
+  "tools/integrations/types": typeof tools_integrations_types;
 }>;
 
 /**

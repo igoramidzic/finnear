@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import { internalAction, internalMutation } from "./_generated/server";
 import { chatAgent } from "./chat";
+import { buildToolsFor } from "./tools";
 
 const SENDBLUE_API_BASE = "https://api.sendblue.com/api";
 
@@ -153,10 +154,11 @@ export const respondToSms = internalAction({
       console.warn("SendBlue typing indicator failed:", err);
     }
 
+    const tools = await buildToolsFor(ctx, phoneNumber);
     const result = await chatAgent.generateText(
       ctx,
       { threadId },
-      { promptMessageId },
+      { promptMessageId, tools },
     );
 
     const reply = result.text.trim();
