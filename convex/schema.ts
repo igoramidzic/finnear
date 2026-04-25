@@ -5,5 +5,6 @@ export default defineSchema({
   userProfile: defineTable({
     clerkId: v.string(),
     email: v.string(),
+    chatThreadId: v.optional(v.string()),
   }).index("by_clerkId", ["clerkId"]),
 });

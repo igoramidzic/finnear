@@ -2,7 +2,7 @@ import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
-import { Home } from "./pages/Home";
+import { Chat } from "./pages/Chat";
 import { Login } from "./pages/Login";
 
 function UnauthenticatedShell() {
@@ -31,7 +31,7 @@ export default function App() {
       </Unauthenticated>
       <Authenticated>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Chat />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Authenticated>
