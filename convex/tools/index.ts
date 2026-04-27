@@ -2,7 +2,6 @@ import type { ToolSet } from "ai";
 
 import type { ActionCtx } from "../_generated/server";
 import { BUILTIN_TOOLS } from "./builtin";
-import { forwardToCreatorTool } from "./builtin/forwardToCreator";
 import {
   cancelScheduleTool,
   createScheduleTool,
@@ -23,6 +22,5 @@ export async function buildToolsFor(ctx: ActionCtx, userKey: string): Promise<To
     listSchedules: listSchedulesTool(ctx, userKey),
     updateSchedule: updateScheduleTool(ctx, userKey),
     cancelSchedule: cancelScheduleTool(ctx, userKey),
-    forwardToCreator: forwardToCreatorTool(ctx, userKey),
   };
 }

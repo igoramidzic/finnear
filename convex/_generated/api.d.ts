@@ -10,13 +10,10 @@
 
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
-import type * as creatorInbox from "../creatorInbox.js";
 import type * as http from "../http.js";
-import type * as lib_creator from "../lib/creator.js";
 import type * as lib_cron from "../lib/cron.js";
 import type * as schedule from "../schedule.js";
 import type * as sendblue from "../sendblue.js";
-import type * as tools_builtin_forwardToCreator from "../tools/builtin/forwardToCreator.js";
 import type * as tools_builtin_index from "../tools/builtin/index.js";
 import type * as tools_builtin_schedule from "../tools/builtin/schedule.js";
 import type * as tools_builtin_userMetadata from "../tools/builtin/userMetadata.js";
@@ -34,13 +31,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chat: typeof chat;
-  creatorInbox: typeof creatorInbox;
   http: typeof http;
-  "lib/creator": typeof lib_creator;
   "lib/cron": typeof lib_cron;
   schedule: typeof schedule;
   sendblue: typeof sendblue;
-  "tools/builtin/forwardToCreator": typeof tools_builtin_forwardToCreator;
   "tools/builtin/index": typeof tools_builtin_index;
   "tools/builtin/schedule": typeof tools_builtin_schedule;
   "tools/builtin/userMetadata": typeof tools_builtin_userMetadata;

@@ -20,11 +20,6 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_userKey", ["userKey"]),
 
-  creatorInbox: defineTable({
-    pendingUserPhone: v.string(),
-    updatedAt: v.number(),
-  }),
-
   schedule: defineTable({
     userKey: v.string(),
     description: v.string(),
