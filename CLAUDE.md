@@ -37,7 +37,11 @@ Single-package repo, **not** a workspace. React frontend in `src/`, Convex backe
 ## Environment
 
 - `.env.local` — frontend only: `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_CONVEX_URL` (auto-written by `convex dev`).
-- Convex dashboard env vars — backend only: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_WEBHOOK_SECRET`.
+- Convex dashboard env vars — backend only:
+  - `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_WEBHOOK_SECRET` — Clerk auth.
+  - `SENDBLUE_API_KEY_ID`, `SENDBLUE_API_SECRET_KEY`, `SENDBLUE_FROM_NUMBER`, `SENDBLUE_WEBHOOK_SECRET` — SMS in/out.
+  - `ANTHROPIC_API_KEY` — read by `@ai-sdk/anthropic` in `convex/chat.ts` for the chat LLM.
+  - `COMPOSIO_API_KEY` — enables the `composioIntegration` in `convex/tools/integrations/composio.ts`. Each SMS user (keyed by phone number) gets only the toolkits they've connected via the `composio_connect` tool. Auth configs must be pre-created in the Composio dashboard for any toolkit you want to allow (Gmail, GitHub, Slack, Linear, etc.).
 
 ## Skills
 

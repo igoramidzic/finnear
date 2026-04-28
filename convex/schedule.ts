@@ -1,16 +1,8 @@
-import { createThread } from "@convex-dev/agent";
 import { v } from "convex/values";
 
-import { components, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalAction,
-  internalMutation,
-  internalQuery,
-} from "./_generated/server";
-import { BASE_INSTRUCTIONS, buildSystemContext, chatAgent } from "./chat";
-import { nextRunFromCron } from "./lib/cron";
-import { buildToolsFor } from "./tools";
+import { internalMutation, internalQuery } from "./_generated/server";
 
 const kindValidator = v.union(v.literal("once"), v.literal("cron"));
 
@@ -60,7 +52,7 @@ export const createSchedule = internalMutation({
 
     const scheduledFunctionId = await ctx.scheduler.runAt(
       args.nextRunAt,
-      internal.schedule.fire,
+      internal.scheduleActions.fire,
       { scheduleId },
     );
     await ctx.db.patch(scheduleId, { scheduledFunctionId });
@@ -108,7 +100,7 @@ export const updateSchedule = internalMutation({
       patch.nextRunAt = args.nextRunAt;
       patch.scheduledFunctionId = await ctx.scheduler.runAt(
         args.nextRunAt,
-        internal.schedule.fire,
+        internal.scheduleActions.fire,
         { scheduleId: args.scheduleId },
       );
     }
@@ -153,7 +145,7 @@ export const rescheduleNext = internalMutation({
   handler: async (ctx, { scheduleId, nextRunAt }) => {
     const scheduledFunctionId = await ctx.scheduler.runAt(
       nextRunAt,
-      internal.schedule.fire,
+      internal.scheduleActions.fire,
       { scheduleId },
     );
     await ctx.db.patch(scheduleId, {
@@ -164,59 +156,3 @@ export const rescheduleNext = internalMutation({
   },
 });
 
-export const fire = internalAction({
-  args: { scheduleId: v.id("schedule") },
-  handler: async (ctx, { scheduleId }) => {
-    const schedule = await ctx.runQuery(internal.schedule.getById, {
-      scheduleId,
-    });
-    if (!schedule || !schedule.active) return;
-
-    const { userKey, description, kind, cron, timezone } = schedule;
-
-    const tools = await buildToolsFor(ctx, userKey);
-    const meta = await ctx.runQuery(internal.userMetadata.getByUserKey, {
-      userKey,
-    });
-    const system =
-      `${BASE_INSTRUCTIONS}\n\n${buildSystemContext(meta)}\n\n` +
-      "This is a scheduled run. The next user message is NOT a chat message from the user — it is an instruction the user previously committed to via createSchedule, telling you what to do for them right now. " +
-      "Execute the instruction and produce the SMS that should be sent to the user. " +
-      "If the instruction says to send specific literal text (e.g. \"send the user 'Hello'\"), output exactly that text and nothing else — no greeting, no commentary. " +
-      "Do not call createSchedule, listSchedules, updateSchedule, or cancelSchedule.";
-
-    const threadId = await createThread(ctx, components.agent, {
-      userId: userKey,
-      title: `scheduled: ${description.slice(0, 40)}`,
-    });
-
-    const result = await chatAgent.generateText(
-      ctx,
-      { threadId },
-      { prompt: description, tools, system },
-    );
-
-    const reply = result.text.trim();
-    if (reply) {
-      await ctx.runAction(internal.sendblue.sendOutbound, {
-        phoneNumber: userKey,
-        content: reply,
-      });
-    } else {
-      console.warn("Scheduled fire produced empty reply", { scheduleId });
-    }
-
-    if (kind === "once") {
-      await ctx.runMutation(internal.schedule.completeOnce, { scheduleId });
-      return;
-    }
-
-    if (kind === "cron" && cron) {
-      const next = nextRunFromCron(cron, timezone);
-      await ctx.runMutation(internal.schedule.rescheduleNext, {
-        scheduleId,
-        nextRunAt: next,
-      });
-    }
-  },
-});

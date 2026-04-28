@@ -10,14 +10,18 @@
 
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
+import type * as composioCheck from "../composioCheck.js";
 import type * as http from "../http.js";
 import type * as lib_cron from "../lib/cron.js";
 import type * as schedule from "../schedule.js";
+import type * as scheduleActions from "../scheduleActions.js";
 import type * as sendblue from "../sendblue.js";
+import type * as sendblueActions from "../sendblueActions.js";
 import type * as tools_builtin_index from "../tools/builtin/index.js";
 import type * as tools_builtin_schedule from "../tools/builtin/schedule.js";
 import type * as tools_builtin_userMetadata from "../tools/builtin/userMetadata.js";
 import type * as tools_index from "../tools/index.js";
+import type * as tools_integrations_composio from "../tools/integrations/composio.js";
 import type * as tools_integrations_index from "../tools/integrations/index.js";
 import type * as tools_integrations_types from "../tools/integrations/types.js";
 import type * as userMetadata from "../userMetadata.js";
@@ -31,14 +35,18 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chat: typeof chat;
+  composioCheck: typeof composioCheck;
   http: typeof http;
   "lib/cron": typeof lib_cron;
   schedule: typeof schedule;
+  scheduleActions: typeof scheduleActions;
   sendblue: typeof sendblue;
+  sendblueActions: typeof sendblueActions;
   "tools/builtin/index": typeof tools_builtin_index;
   "tools/builtin/schedule": typeof tools_builtin_schedule;
   "tools/builtin/userMetadata": typeof tools_builtin_userMetadata;
   "tools/index": typeof tools_index;
+  "tools/integrations/composio": typeof tools_integrations_composio;
   "tools/integrations/index": typeof tools_integrations_index;
   "tools/integrations/types": typeof tools_integrations_types;
   userMetadata: typeof userMetadata;

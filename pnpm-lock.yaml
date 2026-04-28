@@ -14,6 +14,12 @@ importers:
       '@clerk/clerk-react':
         specifier: ^5.20.0
         version: 5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@composio/core':
+        specifier: ^0.6.11
+        version: 0.6.11(ws@8.18.0)(zod@3.25.76)
+      '@composio/vercel':
+        specifier: ^0.6.11
+        version: 0.6.11(@composio/core@0.6.11(ws@8.18.0)(zod@3.25.76))(ai@6.0.168(zod@3.25.76))
       '@convex-dev/agent':
         specifier: ^0.6.1
         version: 0.6.1(@ai-sdk/provider-utils@4.0.23(zod@3.25.76))(ai@6.0.168(zod@3.25.76))(convex-helpers@0.1.115(@standard-schema/spec@1.1.0)(convex@1.36.1(@clerk/clerk-react@5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(zod@3.25.76))(convex@1.36.1(@clerk/clerk-react@5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -330,6 +336,25 @@ packages:
         optional: true
       react-dom:
         optional: true
+
+  '@composio/client@0.1.0-alpha.66':
+    resolution: {integrity: sha512-SDHcTWzz2dgdYAew/gQsRpjHpEzHKm6sW7KM4wCoJWNJuuMuey9Ahje91ZucNjfaqpI8CFW+pXY4nWkZf5LD7Q==}
+
+  '@composio/core@0.6.11':
+    resolution: {integrity: sha512-0uNA1DhHF0l3d51GVRw4CA8oYgqsps+aGMW6J4jA6Ut53HfBHwHJ4JAa9HU/2Psho8tCoprM6NR5DxWGD50H+A==}
+    peerDependencies:
+      zod: ^3.25 || ^4
+
+  '@composio/json-schema-to-zod@0.1.20':
+    resolution: {integrity: sha512-d4V34itLrUWG/VBh7ciznKcxF/T22MBLHmuEzHoX0zsBOHsUmjYz5qtDh20S2p3FE+HHvLZxpXiv8yfdd4yI+Q==}
+    peerDependencies:
+      zod: '>=3.25.76 <5'
+
+  '@composio/vercel@0.6.11':
+    resolution: {integrity: sha512-sNxU8Xurc63FKhuV8QcPr+MLiqo6iZ1RtwXm8dyRbS4fjWKFw/DfYw4+d2ChoNK7l+6XHNXmK7ayzmmovFnZiQ==}
+    peerDependencies:
+      '@composio/core': 0.6.11
+      ai: ^5.0.0 || ^6.0.0
 
   '@convex-dev/agent@0.6.1':
     resolution: {integrity: sha512-FTHF2r6yuY3Lr/zYu9fBMimg30xVXlGkA+9hU12FH1SUoXtrPWCwU3zUYsCKhkH/5sPpWGyO9JMMuXHrP13DQg==}
@@ -2271,6 +2296,18 @@ packages:
     resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
     engines: {node: '>= 6'}
 
+  openai@6.34.0:
+    resolution: {integrity: sha512-yEr2jdGf4tVFYG6ohmr3pF6VJuveP0EA/sS8TBx+4Eq5NT10alu5zg2dmxMXMgqpihRDQlFGpRt2XwsGj+Fyxw==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -2376,6 +2413,9 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
+
+  pusher-js@8.5.0:
+    resolution: {integrity: sha512-V7uzGi9bqOOOyM/6IkJdpFyjGZj7llz1v0oWnYkZKcYLvbz6VcHVLmzKqkvegjuMumpfIEKGLmWHwFb39XFCpw==}
 
   qrcode.react@4.2.0:
     resolution: {integrity: sha512-QpgqWi8rD9DsS9EP3z7BT+5lY5SFhsqGjpgW5DY/i3mK4M9DTBNz3ErMi8BWYEfI3L0d8GIbGmcdFAS1uIRGjA==}
@@ -2593,6 +2633,9 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -2710,6 +2753,11 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zod-to-json-schema@3.25.2:
+    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
+    peerDependencies:
+      zod: ^3.25.28 || ^4
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
@@ -2874,6 +2922,31 @@ snapshots:
     optionalDependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  '@composio/client@0.1.0-alpha.66': {}
+
+  '@composio/core@0.6.11(ws@8.18.0)(zod@3.25.76)':
+    dependencies:
+      '@composio/client': 0.1.0-alpha.66
+      '@composio/json-schema-to-zod': 0.1.20(zod@3.25.76)
+      '@types/json-schema': 7.0.15
+      chalk: 4.1.2
+      openai: 6.34.0(ws@8.18.0)(zod@3.25.76)
+      pusher-js: 8.5.0
+      semver: 7.7.4
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - ws
+
+  '@composio/json-schema-to-zod@0.1.20(zod@3.25.76)':
+    dependencies:
+      zod: 3.25.76
+
+  '@composio/vercel@0.6.11(@composio/core@0.6.11(ws@8.18.0)(zod@3.25.76))(ai@6.0.168(zod@3.25.76))':
+    dependencies:
+      '@composio/core': 0.6.11(ws@8.18.0)(zod@3.25.76)
+      ai: 6.0.168(zod@3.25.76)
 
   '@convex-dev/agent@0.6.1(@ai-sdk/provider-utils@4.0.23(zod@3.25.76))(ai@6.0.168(zod@3.25.76))(convex-helpers@0.1.115(@standard-schema/spec@1.1.0)(convex@1.36.1(@clerk/clerk-react@5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(zod@3.25.76))(convex@1.36.1(@clerk/clerk-react@5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -4678,6 +4751,11 @@ snapshots:
 
   object-hash@3.0.0: {}
 
+  openai@6.34.0(ws@8.18.0)(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.18.0
+      zod: 3.25.76
+
   optionator@0.9.4:
     dependencies:
       deep-is: 0.1.4
@@ -4757,6 +4835,10 @@ snapshots:
   prettier@3.8.3: {}
 
   punycode@2.3.1: {}
+
+  pusher-js@8.5.0:
+    dependencies:
+      tweetnacl: 1.0.3
 
   qrcode.react@4.2.0(react@18.3.1):
     dependencies:
@@ -5003,6 +5085,8 @@ snapshots:
 
   tslib@2.8.1: {}
 
+  tweetnacl@1.0.3: {}
+
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
@@ -5075,5 +5159,9 @@ snapshots:
   yallist@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod-to-json-schema@3.25.2(zod@3.25.76):
+    dependencies:
+      zod: 3.25.76
 
   zod@3.25.76: {}
