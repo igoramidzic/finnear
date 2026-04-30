@@ -52,3 +52,11 @@ Single-package repo, **not** a workspace. React frontend in `src/`, Convex backe
 - Branch: `feature/fin-XXX` or `fix/fin-XXX` (Linear prefix FIN).
 - Route prefix `/finnear/*` for any public-facing paths (convention from the broader Finnear platform).
 - Companion iOS app lives at `../finnear_mobile` (SwiftUI); reference implementation for auth/webhook patterns is `../finnear_logs` (Angular, not React — translate patterns, don't copy code).
+
+<!-- convex-ai-start -->
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
+<!-- convex-ai-end -->

@@ -6,6 +6,19 @@ export default defineSchema({
     phoneNumber: v.string(),
     chatThreadId: v.string(),
     lastMessageAt: v.number(),
+    // Last few inbound messages, newest last. Used so the chat agent can
+    // react to a previous message ("actually make that a dislike"), not
+    // just the current turn's message. Trimmed to ~5 entries.
+    recentInbound: v.optional(
+      v.array(
+        v.object({
+          messageHandle: v.string(),
+          content: v.string(),
+          receivedAt: v.number(),
+          service: v.optional(v.string()),
+        }),
+      ),
+    ),
   }).index("by_phone", ["phoneNumber"]),
 
   userMetadata: defineTable({

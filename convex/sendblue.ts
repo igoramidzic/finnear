@@ -2,23 +2,54 @@ import { createThread } from "@convex-dev/agent";
 import { v } from "convex/values";
 
 import { components, internal } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { chatAgent } from "./chat";
 
 const ROLLOVER_MS = 24 * 60 * 60 * 1000;
+const RECENT_INBOUND_LIMIT = 5;
 
 const RESET_WORDS = new Set(["reset", "new chat", "start over"]);
 const RESET_REPLY = "Started a new chat. What's up?";
 
+type RecentInboundEntry = {
+	messageHandle: string;
+	content: string;
+	receivedAt: number;
+	service?: string;
+};
+
+function appendRecentInbound(
+	prior: RecentInboundEntry[] | undefined,
+	entry: RecentInboundEntry | null,
+): RecentInboundEntry[] | undefined {
+	if (!entry) return prior;
+	const next = [...(prior ?? []), entry];
+	return next.slice(-RECENT_INBOUND_LIMIT);
+}
+
 export const ingestInboundMessage = internalMutation({
-	args: { phoneNumber: v.string(), content: v.string() },
-	handler: async (ctx, { phoneNumber, content }) => {
+	args: {
+		phoneNumber: v.string(),
+		content: v.string(),
+		messageHandle: v.optional(v.string()),
+		service: v.optional(v.string()),
+	},
+	handler: async (ctx, { phoneNumber, content, messageHandle, service }) => {
 		const existing = await ctx.db
 			.query("smsUser")
 			.withIndex("by_phone", (q) => q.eq("phoneNumber", phoneNumber))
 			.first();
 
 		const isReset = RESET_WORDS.has(content.trim().toLowerCase());
+
+		const newEntry: RecentInboundEntry | null = messageHandle
+			? {
+					messageHandle,
+					content,
+					receivedAt: Date.now(),
+					service,
+				}
+			: null;
 
 		let threadId: string;
 		if (existing) {
@@ -27,13 +58,20 @@ export const ingestInboundMessage = internalMutation({
 				threadId = await createThread(ctx, components.agent, {
 					userId: phoneNumber,
 				});
+				// New conversation — drop prior handles, they're no longer in
+				// scope for "react to an earlier message".
 				await ctx.db.patch(existing._id, {
 					chatThreadId: threadId,
 					lastMessageAt: Date.now(),
+					recentInbound: appendRecentInbound(undefined, newEntry) ?? [],
 				});
 			} else {
 				threadId = existing.chatThreadId;
-				await ctx.db.patch(existing._id, { lastMessageAt: Date.now() });
+				await ctx.db.patch(existing._id, {
+					lastMessageAt: Date.now(),
+					recentInbound:
+						appendRecentInbound(existing.recentInbound, newEntry) ?? [],
+				});
 			}
 		} else {
 			threadId = await createThread(ctx, components.agent, {
@@ -43,6 +81,7 @@ export const ingestInboundMessage = internalMutation({
 				phoneNumber,
 				chatThreadId: threadId,
 				lastMessageAt: Date.now(),
+				recentInbound: appendRecentInbound(undefined, newEntry) ?? [],
 			});
 		}
 
@@ -66,5 +105,16 @@ export const ingestInboundMessage = internalMutation({
 			threadId,
 			promptMessageId: messageId,
 		});
+	},
+});
+
+export const getRecentInbound = internalQuery({
+	args: { phoneNumber: v.string() },
+	handler: async (ctx, { phoneNumber }) => {
+		const user = await ctx.db
+			.query("smsUser")
+			.withIndex("by_phone", (q) => q.eq("phoneNumber", phoneNumber))
+			.first();
+		return user?.recentInbound ?? [];
 	},
 });

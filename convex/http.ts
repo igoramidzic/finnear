@@ -24,6 +24,8 @@ http.route({
       is_outbound?: boolean;
       from_number?: string;
       to_number?: string;
+      message_handle?: string;
+      service?: string;
     };
     try {
       payload = (await request.json()) as typeof payload;
@@ -42,6 +44,8 @@ http.route({
     await ctx.runMutation(internal.sendblue.ingestInboundMessage, {
       phoneNumber: payload.from_number,
       content: payload.content.trim(),
+      messageHandle: payload.message_handle,
+      service: payload.service,
     });
 
     return new Response("ok", { status: 200 });
