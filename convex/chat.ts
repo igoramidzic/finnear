@@ -13,13 +13,17 @@ export const BASE_INSTRUCTIONS =
   "Never ask the user for their timezone — it is derived from city automatically. " +
   "If you already know their city, do not ask again. " +
   "If the user asks to be reminded about something, or to do something on a schedule (like 'every morning' or 'next Tuesday at 3pm'), call createSchedule. " +
-  "Translate natural language to a 5-field cron in the user's timezone (e.g. 'every morning at 6am' → '0 6 * * *', 'every Monday at 9am' → '0 9 * * 1'). " +
+  "Picking the time field: " +
+  "for relative requests ('in 10 minutes', 'in 2 hours', 'in 3 days'), ALWAYS use runInSeconds (10 min = 600, 2 hours = 7200, 3 days = 259200) — never compute a wall-clock time yourself, you will get the timezone wrong. " +
+  "For absolute one-time requests ('tomorrow at 2pm', 'May 5 at 9am'), use runAtIso with the user's local wall-clock time and no offset (e.g. '2026-05-02T14:00:00') — copy the date portion from the 'Local wall time' line in the system context. " +
+  "For recurring requests ('every morning at 6am', 'every Monday at 9am'), use cron — translate to a 5-field crontab in the user's timezone ('0 6 * * *', '0 9 * * 1'). " +
   "Recurring schedules must be at least 1 hour apart — if the user asks for something more frequent (e.g. 'every minute', 'every 5 minutes'), tell them the minimum is hourly and ask for a slower cadence. " +
-  "For one-off requests use runAtIso (ISO 8601, no offset means user's timezone). " +
   "The description is an INSTRUCTION to yourself for what to do when the schedule fires — write it in second person, imperative, as a task. It is not the SMS text the user will see. " +
+  "CRITICAL: the description must be SELF-CONTAINED. Do not include relative time references like 'in 5 minutes', 'later', 'tonight', 'tomorrow' — at fire time those words are wrong or meaningless. The schedule timing belongs in runInSeconds/runAtIso/cron, not in the description. " +
   "Examples: user says 'tell me the weather every morning at 6am' → description: 'Look up the current weather in the user's city and text them a brief summary.' " +
   "User says \"send me 'Hello' every minute\" → description: \"Send the user the literal text: Hello\" (the firing run will output exactly 'Hello'). " +
   "User says 'remind me to call mom on Friday at 3pm' → description: 'Send the user a short reminder that they wanted to call mom.' " +
+  "User says 'remind me to buy plushies in 1 hour 42 min' → runInSeconds: 6120, description: 'Send the user a reminder to buy plushies.' (no time reference in description). " +
   "Be specific about the desired SMS so the firing run produces the right output. " +
   "If you don't know the user's city/timezone yet, call setUserMetadata first. " +
   "You cannot relay, forward, or deliver messages to Finnear's creator, founder, or developer, and you must not offer to do so. If the user asks to contact the creator/founder/developer, briefly say that isn't something you can help with and move on. " +
@@ -65,6 +69,30 @@ function formatLocalTime(now: Date, tz: string): string {
   }
 }
 
+function formatLocalIsoWallTime(now: Date, tz: string): string {
+  try {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        hour12: false,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+        .formatToParts(now)
+        .filter((p) => p.type !== "literal")
+        .map((p) => [p.type, p.value]),
+    );
+    const hour = parts.hour === "24" ? "00" : parts.hour;
+    return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}`;
+  } catch {
+    return now.toISOString();
+  }
+}
+
 export function buildSystemContext(
   meta: MetaFacts | null | undefined,
   now: Date = new Date(),
@@ -83,7 +111,12 @@ export function buildSystemContext(
 
   const timeLines = [`Current UTC: ${now.toISOString()}.`];
   if (meta?.timezone) {
-    timeLines.push(`Current local time (${meta.timezone}): ${formatLocalTime(now, meta.timezone)}.`);
+    timeLines.push(
+      `Current local time (${meta.timezone}): ${formatLocalTime(now, meta.timezone)}.`,
+    );
+    timeLines.push(
+      `Local wall time (${meta.timezone}, no offset, copy date portion for runAtIso): ${formatLocalIsoWallTime(now, meta.timezone)}.`,
+    );
   } else {
     timeLines.push(
       "User's timezone is unknown — call setUserMetadata with the user's city before scheduling.",

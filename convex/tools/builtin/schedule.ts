@@ -20,18 +20,21 @@ async function getTimezone(
   return meta?.timezone ?? null;
 }
 
+const MAX_RUN_IN_SECONDS = 366 * 24 * 60 * 60;
+
 export function createScheduleTool(ctx: ActionCtx, userKey: string) {
   return tool({
     description:
       "Schedule a future task. The description is an instruction to yourself, in imperative second person, telling the firing run what SMS to produce — not the SMS text itself. " +
       "Examples: 'Look up the current weather in the user's city and text them a brief summary.' / 'Send the user the literal text: Hello' / 'Send the user a short reminder that they wanted to call mom.' " +
-      "Use cron for recurring schedules and runAtIso for one-time. Exactly one must be provided.",
+      "Provide exactly one of: cron (recurring), runInSeconds (relative one-time), runAtIso (absolute one-time). " +
+      "Prefer runInSeconds for any 'in N minutes/hours/days' request — it avoids timezone math.",
     inputSchema: z.object({
       description: z
         .string()
         .min(1)
         .describe(
-          "Imperative instruction to the firing run describing what SMS to produce. Not the SMS text. E.g. 'Send the user the literal text: Hello' or 'Look up the weather in the user's city and text them a brief summary.'",
+          "Imperative instruction to the firing run describing what SMS to produce. Not the SMS text. Must be self-contained: do NOT include relative time references like 'in 5 minutes', 'later today', 'tomorrow' — by the time it fires those words are wrong. E.g. 'Send the user the literal text: Hello' or 'Send the user a reminder to buy plushies.'",
         ),
       cron: z
         .string()
@@ -39,14 +42,23 @@ export function createScheduleTool(ctx: ActionCtx, userKey: string) {
         .describe(
           "5-field crontab in the user's timezone, e.g. '0 6 * * *' for 6am daily, '0 9 * * 1' for Mondays at 9am.",
         ),
+      runInSeconds: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_RUN_IN_SECONDS)
+        .optional()
+        .describe(
+          "Seconds from now to fire. Use this for relative requests ('in 10 minutes' → 600, 'in 2 hours' → 7200, 'in 3 days' → 259200). Max ~1 year.",
+        ),
       runAtIso: z
         .string()
         .optional()
         .describe(
-          "ISO 8601 datetime for one-time schedules. If no offset is given, interpreted in the user's timezone.",
+          "ISO 8601 datetime for absolute one-time schedules ('tomorrow at 2pm', 'May 5 at 9am'). If no offset is given, interpreted as wall-clock time in the user's timezone. Do NOT use this for relative 'in N minutes' requests — use runInSeconds instead.",
         ),
     }),
-    execute: async ({ description, cron, runAtIso }) => {
+    execute: async ({ description, cron, runInSeconds, runAtIso }) => {
       const timezone = await getTimezone(ctx, userKey);
       if (!timezone) {
         return {
@@ -56,10 +68,13 @@ export function createScheduleTool(ctx: ActionCtx, userKey: string) {
         };
       }
 
-      if (!!cron === !!runAtIso) {
+      const provided = [cron, runInSeconds, runAtIso].filter(
+        (v) => v !== undefined && v !== null,
+      ).length;
+      if (provided !== 1) {
         return {
           ok: false as const,
-          reason: "Provide exactly one of cron or runAtIso.",
+          reason: "Provide exactly one of cron, runInSeconds, or runAtIso.",
         };
       }
 
@@ -87,18 +102,24 @@ export function createScheduleTool(ctx: ActionCtx, userKey: string) {
         };
       }
 
-      const runAt = parseIsoInTz(runAtIso!, timezone);
-      if (runAt === null) {
-        return {
-          ok: false as const,
-          reason: `Could not parse runAtIso "${runAtIso}".`,
-        };
-      }
-      if (runAt <= Date.now()) {
-        return {
-          ok: false as const,
-          reason: "runAtIso is in the past.",
-        };
+      let runAt: number;
+      if (runInSeconds !== undefined) {
+        runAt = Date.now() + runInSeconds * 1000;
+      } else {
+        const parsed = parseIsoInTz(runAtIso!, timezone);
+        if (parsed === null) {
+          return {
+            ok: false as const,
+            reason: `Could not parse runAtIso "${runAtIso}".`,
+          };
+        }
+        if (parsed <= Date.now()) {
+          return {
+            ok: false as const,
+            reason: "runAtIso is in the past.",
+          };
+        }
+        runAt = parsed;
       }
       const scheduleId = await ctx.runMutation(
         internal.schedule.createSchedule,
@@ -124,27 +145,39 @@ export function updateScheduleTool(ctx: ActionCtx, userKey: string) {
   return tool({
     description:
       "Edit an existing schedule. Use when the user wants to change the time, recurrence, or description of a reminder they already created (e.g. 'change it to 5 minutes', 'make it weekly instead', 'actually remind me to walk the dog'). " +
-      "Look up the schedule first via listSchedules to get its id. Pass only the fields you want to change.",
+      "Look up the schedule first via listSchedules to get its id. Pass only the fields you want to change. " +
+      "Prefer runInSeconds for relative time changes — avoids timezone math.",
     inputSchema: z.object({
       scheduleId: z.string().describe("The schedule's id from listSchedules."),
       description: z
         .string()
         .optional()
-        .describe("New verbatim prompt to run when the schedule fires."),
+        .describe(
+          "New imperative instruction for the firing run. Must be self-contained — no relative time references like 'in 5 minutes' or 'tomorrow'.",
+        ),
       cron: z
         .string()
         .optional()
         .describe(
           "New 5-field crontab in the user's timezone. Switches the schedule to recurring.",
         ),
+      runInSeconds: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_RUN_IN_SECONDS)
+        .optional()
+        .describe(
+          "Seconds from now to fire. Use for relative changes ('change it to 5 min from now' → 300). Switches the schedule to one-time.",
+        ),
       runAtIso: z
         .string()
         .optional()
         .describe(
-          "New ISO 8601 datetime. Switches the schedule to one-time. No offset means user's timezone.",
+          "New ISO 8601 datetime for absolute times. Switches the schedule to one-time. No offset means user's wall-clock time. Do NOT use for relative requests — use runInSeconds.",
         ),
     }),
-    execute: async ({ scheduleId, description, cron, runAtIso }) => {
+    execute: async ({ scheduleId, description, cron, runInSeconds, runAtIso }) => {
       const id = scheduleId as Id<"schedule">;
       const row = await ctx.runQuery(internal.schedule.getById, {
         scheduleId: id,
@@ -152,13 +185,16 @@ export function updateScheduleTool(ctx: ActionCtx, userKey: string) {
       if (!row || row.userKey !== userKey) {
         return { ok: false as const, reason: "schedule not found" };
       }
-      if (cron && runAtIso) {
+      const timeFieldsProvided = [cron, runInSeconds, runAtIso].filter(
+        (v) => v !== undefined && v !== null,
+      ).length;
+      if (timeFieldsProvided > 1) {
         return {
           ok: false as const,
-          reason: "Provide cron or runAtIso, not both.",
+          reason: "Provide at most one of cron, runInSeconds, or runAtIso.",
         };
       }
-      if (description === undefined && !cron && !runAtIso) {
+      if (description === undefined && timeFieldsProvided === 0) {
         return { ok: false as const, reason: "nothing to update" };
       }
 
@@ -183,6 +219,11 @@ export function updateScheduleTool(ctx: ActionCtx, userKey: string) {
         patch.kind = "cron";
         patch.cron = cron;
         patch.nextRunAt = nextRunFromCron(cron, timezone);
+      } else if (runInSeconds !== undefined) {
+        const runAt = Date.now() + runInSeconds * 1000;
+        patch.kind = "once";
+        patch.runAt = runAt;
+        patch.nextRunAt = runAt;
       } else if (runAtIso) {
         const runAt = parseIsoInTz(runAtIso, timezone);
         if (runAt === null) {

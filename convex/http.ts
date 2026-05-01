@@ -26,6 +26,7 @@ http.route({
       to_number?: string;
       message_handle?: string;
       service?: string;
+      media_url?: string;
     };
     try {
       payload = (await request.json()) as typeof payload;
@@ -33,17 +34,21 @@ http.route({
       return new Response("Invalid JSON", { status: 400 });
     }
 
+    const trimmedContent = payload.content?.trim() ?? "";
+    const mediaUrl = payload.media_url?.trim() || undefined;
+
     if (
       payload.is_outbound !== false ||
-      !payload.content?.trim() ||
-      !payload.from_number
+      !payload.from_number ||
+      (!trimmedContent && !mediaUrl)
     ) {
       return new Response("ok", { status: 200 });
     }
 
     await ctx.runMutation(internal.sendblue.ingestInboundMessage, {
       phoneNumber: payload.from_number,
-      content: payload.content.trim(),
+      content: trimmedContent,
+      mediaUrl,
       messageHandle: payload.message_handle,
       service: payload.service,
     });

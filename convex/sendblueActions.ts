@@ -15,6 +15,188 @@ import {
 import { buildToolsFor } from "./tools";
 
 const SENDBLUE_API_BASE = "https://api.sendblue.com/api";
+const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+const TRANSCRIBE_MODEL = "google/gemini-2.5-flash";
+const VISION_MODEL = "google/gemini-2.5-flash";
+const MAX_MEDIA_BYTES = 24 * 1024 * 1024;
+const TRANSCRIBE_FAILED_REPLY =
+	"sorry, couldn't make out that voice note — mind retrying or texting?";
+const DESCRIBE_FAILED_REPLY =
+	"sorry, couldn't see that image clearly — mind retrying or texting?";
+
+const OPENROUTER_AUDIO_FORMATS = new Set([
+	"wav",
+	"mp3",
+	"aiff",
+	"aac",
+	"ogg",
+	"flac",
+	"m4a",
+]);
+
+function pickAudioFormat(url: string): string {
+	const match = url.split("?")[0].match(/\.([a-z0-9]+)$/i);
+	const ext = match?.[1].toLowerCase();
+	if (!ext) return "m4a";
+	if (ext === "caf") return "m4a";
+	if (OPENROUTER_AUDIO_FORMATS.has(ext)) return ext;
+	return "m4a";
+}
+
+async function transcribeAudio(mediaUrl: string): Promise<string | null> {
+	const apiKey = process.env.OPENROUTER_API_KEY;
+	if (!apiKey) {
+		console.error("[transcribe] Missing OPENROUTER_API_KEY");
+		return null;
+	}
+
+	console.log(`[transcribe] fetching media: ${mediaUrl}`);
+	const audioRes = await fetch(mediaUrl);
+	if (!audioRes.ok) {
+		console.error(
+			`[transcribe] media fetch failed ${mediaUrl}: ${audioRes.status} ${audioRes.statusText}`,
+		);
+		return null;
+	}
+	const buf = await audioRes.arrayBuffer();
+	const contentType = audioRes.headers.get("content-type") ?? "unknown";
+	console.log(
+		`[transcribe] media fetched: ${buf.byteLength} bytes, content-type=${contentType}`,
+	);
+	if (buf.byteLength > MAX_MEDIA_BYTES) {
+		console.error(`[transcribe] audio too large: ${buf.byteLength} bytes`);
+		return null;
+	}
+	const base64 = Buffer.from(buf).toString("base64");
+	const format = pickAudioFormat(mediaUrl);
+	console.log(
+		`[transcribe] calling ${TRANSCRIBE_MODEL} with format=${format}, base64Len=${base64.length}`,
+	);
+
+	const res = await fetch(OPENROUTER_CHAT_URL, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${apiKey}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			model: TRANSCRIBE_MODEL,
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "text",
+							text: "Transcribe this audio. Return only the transcript text, no commentary.",
+						},
+						{
+							type: "input_audio",
+							input_audio: { data: base64, format },
+						},
+					],
+				},
+			],
+		}),
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		console.error(
+			`[transcribe] OpenRouter ${TRANSCRIBE_MODEL} failed: ${res.status} ${text}`,
+		);
+		return null;
+	}
+	const json = (await res.json()) as {
+		choices?: { message?: { content?: string } }[];
+		error?: unknown;
+	};
+	if (json.error) {
+		console.error(`[transcribe] OpenRouter returned error: ${JSON.stringify(json.error)}`);
+		return null;
+	}
+	const transcript = json.choices?.[0]?.message?.content?.trim() ?? "";
+	console.log(
+		`[transcribe] success: ${transcript.length} chars — ${JSON.stringify(transcript.slice(0, 80))}`,
+	);
+	return transcript || null;
+}
+
+async function describeImage(mediaUrl: string): Promise<string | null> {
+	const apiKey = process.env.OPENROUTER_API_KEY;
+	if (!apiKey) {
+		console.error("[describe] Missing OPENROUTER_API_KEY");
+		return null;
+	}
+
+	console.log(`[describe] fetching media: ${mediaUrl}`);
+	const imageRes = await fetch(mediaUrl);
+	if (!imageRes.ok) {
+		console.error(
+			`[describe] media fetch failed ${mediaUrl}: ${imageRes.status} ${imageRes.statusText}`,
+		);
+		return null;
+	}
+	const buf = await imageRes.arrayBuffer();
+	const contentType =
+		imageRes.headers.get("content-type")?.split(";")[0].trim() || "image/jpeg";
+	console.log(
+		`[describe] media fetched: ${buf.byteLength} bytes, content-type=${contentType}`,
+	);
+	if (buf.byteLength > MAX_MEDIA_BYTES) {
+		console.error(`[describe] image too large: ${buf.byteLength} bytes`);
+		return null;
+	}
+	const base64 = Buffer.from(buf).toString("base64");
+	const dataUrl = `data:${contentType};base64,${base64}`;
+	console.log(
+		`[describe] calling ${VISION_MODEL} with content-type=${contentType}, base64Len=${base64.length}`,
+	);
+
+	const res = await fetch(OPENROUTER_CHAT_URL, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${apiKey}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			model: VISION_MODEL,
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "text",
+							text: "Describe this image in 1-2 short sentences. Include any clearly legible text verbatim. No commentary, no preamble.",
+						},
+						{
+							type: "image_url",
+							image_url: { url: dataUrl },
+						},
+					],
+				},
+			],
+		}),
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		console.error(
+			`[describe] OpenRouter ${VISION_MODEL} failed: ${res.status} ${text}`,
+		);
+		return null;
+	}
+	const json = (await res.json()) as {
+		choices?: { message?: { content?: string } }[];
+		error?: unknown;
+	};
+	if (json.error) {
+		console.error(`[describe] OpenRouter returned error: ${JSON.stringify(json.error)}`);
+		return null;
+	}
+	const description = json.choices?.[0]?.message?.content?.trim() ?? "";
+	console.log(
+		`[describe] success: ${description.length} chars — ${JSON.stringify(description.slice(0, 80))}`,
+	);
+	return description || null;
+}
 
 const TAPBACK_REACTIONS = [
 	"love",
@@ -160,6 +342,66 @@ export const sendCannedReply = internalAction({
 	args: { phoneNumber: v.string(), content: v.string() },
 	handler: async (_ctx, { phoneNumber, content }) => {
 		await sendSendblueMessage(phoneNumber, content);
+	},
+});
+
+export const transcribeAndIngest = internalAction({
+	args: {
+		phoneNumber: v.string(),
+		content: v.string(),
+		mediaUrl: v.string(),
+		messageHandle: v.optional(v.string()),
+		service: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		{ phoneNumber, content, mediaUrl, messageHandle, service },
+	) => {
+		const transcript = await transcribeAudio(mediaUrl);
+		if (!transcript) {
+			await sendSendblueMessage(phoneNumber, TRANSCRIBE_FAILED_REPLY);
+			return;
+		}
+		const trimmedText = content.trim();
+		const prompt = trimmedText
+			? `${trimmedText}\n[voice memo]: ${transcript}`
+			: transcript;
+		await ctx.runMutation(internal.sendblue.dispatchTranscribedMessage, {
+			phoneNumber,
+			prompt,
+			messageHandle,
+			service,
+		});
+	},
+});
+
+export const describeAndIngest = internalAction({
+	args: {
+		phoneNumber: v.string(),
+		content: v.string(),
+		mediaUrl: v.string(),
+		messageHandle: v.optional(v.string()),
+		service: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		{ phoneNumber, content, mediaUrl, messageHandle, service },
+	) => {
+		const description = await describeImage(mediaUrl);
+		if (!description) {
+			await sendSendblueMessage(phoneNumber, DESCRIBE_FAILED_REPLY);
+			return;
+		}
+		const trimmedText = content.trim();
+		const prompt = trimmedText
+			? `${trimmedText}\n[image]: ${description}`
+			: `[image]: ${description}`;
+		await ctx.runMutation(internal.sendblue.dispatchTranscribedMessage, {
+			phoneNumber,
+			prompt,
+			messageHandle,
+			service,
+		});
 	},
 });
 

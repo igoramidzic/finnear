@@ -13,6 +13,7 @@ import type * as chat from "../chat.js";
 import type * as composioCheck from "../composioCheck.js";
 import type * as http from "../http.js";
 import type * as lib_cron from "../lib/cron.js";
+import type * as lib_media from "../lib/media.js";
 import type * as schedule from "../schedule.js";
 import type * as scheduleActions from "../scheduleActions.js";
 import type * as sendblue from "../sendblue.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   composioCheck: typeof composioCheck;
   http: typeof http;
   "lib/cron": typeof lib_cron;
+  "lib/media": typeof lib_media;
   schedule: typeof schedule;
   scheduleActions: typeof scheduleActions;
   sendblue: typeof sendblue;

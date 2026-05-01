@@ -34,7 +34,9 @@ export const fire = internalAction({
       buildSystemContext(meta),
       integrations,
       "This is a scheduled run. The next user message is NOT a chat message from the user — it is an instruction the user previously committed to via createSchedule, telling you what to do for them right now. " +
-        "Execute the instruction and produce the SMS that should be sent to the user. " +
+        "Your ONLY output channel is your text reply, which is sent to the user as an SMS. " +
+        "When the instruction says 'send the user', 'remind the user', 'tell the user', or anything similar, that means: produce the SMS text in your reply. It does NOT mean send an email, Slack message, Gmail draft, calendar invite, or any other integration message — even if the user has Gmail/Slack/etc. connected. " +
+        "Do NOT call any messaging, email, chat, calendar, or notification tool to deliver the reminder (no GMAIL_*, SLACK_*, DISCORD_*, GOOGLECALENDAR_*, etc. send/create/draft tools). Only call read/lookup tools if the instruction requires fetching information first (e.g. 'look up the weather and text it'). " +
         "If the instruction says to send specific literal text (e.g. \"send the user 'Hello'\"), output exactly that text and nothing else — no greeting, no commentary. " +
         "Do not call createSchedule, listSchedules, updateSchedule, or cancelSchedule.",
     ]
