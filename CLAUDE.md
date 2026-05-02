@@ -42,6 +42,7 @@ Single-package repo, **not** a workspace. React frontend in `src/`, Convex backe
   - `SENDBLUE_API_KEY_ID`, `SENDBLUE_API_SECRET_KEY`, `SENDBLUE_FROM_NUMBER`, `SENDBLUE_WEBHOOK_SECRET` — SMS in/out.
   - `ANTHROPIC_API_KEY` — read by `@ai-sdk/anthropic` in `convex/chat.ts` for the chat LLM.
   - `OPENROUTER_API_KEY` — used in `convex/sendblueActions.ts` to transcribe inbound voice memos via `openai/whisper-1` (chat/completions with `input_audio`).
+  - `MEM0_API_KEY` — enables the built-in `searchMemories` / `addMemory` tools in `convex/tools/builtin/memory.ts`. Memories are scoped per user by phone number (passed as `user_id` to the mem0 cloud SDK). Without this key the tools are simply not registered.
   - `COMPOSIO_API_KEY` — enables the `composioIntegration` in `convex/tools/integrations/composio.ts`. Each SMS user (keyed by phone number) gets only the toolkits they've connected via the `composio_connect` tool. Auth configs must be pre-created in the Composio dashboard for any toolkit you want to allow (Gmail, GitHub, Slack, Linear, etc.).
 
 ## Skills

@@ -11,6 +11,7 @@ import {
   updateScheduleTool,
 } from "./builtin/schedule";
 import { setUserMetadataTool } from "./builtin/userMetadata";
+import { addMemoryTool, searchMemoriesTool } from "./builtin/memory";
 import { INTEGRATIONS } from "./integrations";
 
 export type BuiltTools = {
@@ -36,6 +37,14 @@ export async function buildToolsFor(
     cancelSchedule: cancelScheduleTool(ctx, userKey),
   };
   const connected: Record<string, string[]> = {};
+
+  const search = searchMemoriesTool(userKey);
+  const add = addMemoryTool(userKey);
+  if (search && add) {
+    tools.searchMemories = search;
+    tools.addMemory = add;
+    connected.memory = ["searchMemories", "addMemory"];
+  }
 
   for (const integration of INTEGRATIONS) {
     try {

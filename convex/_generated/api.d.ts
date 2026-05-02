@@ -10,7 +10,6 @@
 
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
-import type * as composioCheck from "../composioCheck.js";
 import type * as http from "../http.js";
 import type * as lib_cron from "../lib/cron.js";
 import type * as lib_media from "../lib/media.js";
@@ -19,6 +18,7 @@ import type * as scheduleActions from "../scheduleActions.js";
 import type * as sendblue from "../sendblue.js";
 import type * as sendblueActions from "../sendblueActions.js";
 import type * as tools_builtin_index from "../tools/builtin/index.js";
+import type * as tools_builtin_memory from "../tools/builtin/memory.js";
 import type * as tools_builtin_schedule from "../tools/builtin/schedule.js";
 import type * as tools_builtin_userMetadata from "../tools/builtin/userMetadata.js";
 import type * as tools_index from "../tools/index.js";
@@ -36,7 +36,6 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chat: typeof chat;
-  composioCheck: typeof composioCheck;
   http: typeof http;
   "lib/cron": typeof lib_cron;
   "lib/media": typeof lib_media;
@@ -45,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   sendblue: typeof sendblue;
   sendblueActions: typeof sendblueActions;
   "tools/builtin/index": typeof tools_builtin_index;
+  "tools/builtin/memory": typeof tools_builtin_memory;
   "tools/builtin/schedule": typeof tools_builtin_schedule;
   "tools/builtin/userMetadata": typeof tools_builtin_userMetadata;
   "tools/index": typeof tools_index;

@@ -11,9 +11,9 @@ import type { IntegrationDefinition, IntegrationResult } from "./types";
 let cachedClient: Composio<VercelProvider> | null = null;
 
 // Toolkits that should be auto-connected for every user the first time we
-// see them. mem0 uses API-key auth in Composio, so connectedAccounts.link()
-// returns immediately with an active connection (no OAuth redirect needed).
-const ALWAYS_ON_TOOLKITS = ["mem0"] as const;
+// see them. Empty by default — add API-key toolkits here if you want them
+// available without a connect step.
+const ALWAYS_ON_TOOLKITS: readonly string[] = [];
 
 function getClient(): Composio<VercelProvider> | null {
   const apiKey = process.env.COMPOSIO_API_KEY;
@@ -45,20 +45,9 @@ async function ensureAlwaysOnConnections(
   alreadyConnected: Set<string>,
 ) {
   for (const slug of ALWAYS_ON_TOOLKITS) {
-    if (alreadyConnected.has(slug)) {
-      console.log(`[composio] ${slug} already connected for ${userKey}`);
-      continue;
-    }
+    if (alreadyConnected.has(slug)) continue;
     try {
       const configs = await composio.authConfigs.list({ toolkit: slug });
-      console.log(
-        `[composio] authConfigs for ${slug}:`,
-        configs.items?.map((c) => ({
-          id: c.id,
-          isComposioManaged: c.isComposioManaged,
-          authScheme: (c as { authScheme?: unknown }).authScheme,
-        })),
-      );
       const cfg =
         configs.items?.find((c) => c.isComposioManaged) ?? configs.items?.[0];
       if (!cfg) {
@@ -69,11 +58,6 @@ async function ensureAlwaysOnConnections(
       }
       const linked = await composio.connectedAccounts.link(userKey, cfg.id);
       const status = (linked as { status?: string }).status;
-      console.log(`[composio] link(${slug}) for ${userKey}:`, {
-        id: linked.id,
-        status,
-        hasRedirectUrl: Boolean(linked.redirectUrl),
-      });
       if (status === "ACTIVE") {
         alreadyConnected.add(slug);
       } else {
@@ -81,7 +65,7 @@ async function ensureAlwaysOnConnections(
         // would need to finish auth through linked.redirectUrl. Don't surface
         // the toolkit's tools to the model — they'd 401 at call time.
         console.warn(
-          `[composio] auto-connect for ${slug} returned status=${status}; toolkit not active. Make the auth config Composio-managed (or supply credentials) so link() activates immediately.`,
+          `[composio] auto-connect for ${slug} returned status=${status}; make the auth config Composio-managed so link() activates immediately.`,
         );
       }
     } catch (err) {
@@ -149,7 +133,7 @@ export const composioIntegration: IntegrationDefinition = {
   id: "composio",
   name: "Composio",
   description:
-    "Per-user toolkit connections (mem0 memory, Gmail, GitHub, Slack, Linear, etc.) backed by Composio.",
+    "Per-user toolkit connections (Gmail, GitHub, Slack, Linear, etc.) backed by Composio.",
   async buildTools(_ctx: ActionCtx, { userKey }): Promise<IntegrationResult> {
     const composio = getClient();
     if (!composio) return { tools: {}, connected: {} };
@@ -167,7 +151,7 @@ export const composioIntegration: IntegrationDefinition = {
 
       // Fetch per-toolkit. A single tools.get with multiple toolkits competes
       // for one global `limit`, and toolkits with many tools (e.g. Gmail)
-      // alphabetically crowd out smaller toolkits like mem0.
+      // alphabetically crowd out smaller toolkits.
       const loaded: ToolSet = {};
       for (const slug of toolkits) {
         try {
@@ -176,16 +160,12 @@ export const composioIntegration: IntegrationDefinition = {
             limit: 50,
           })) as ToolSet;
           Object.assign(loaded, t);
-          console.log(
-            `[composio] tools.get(${slug}) -> ${Object.keys(t).length} tools`,
-          );
         } catch (err) {
           console.warn(`[composio] tools.get(${slug}) failed`, err);
         }
       }
       Object.assign(tools, loaded);
       Object.assign(connected, groupToolsByToolkit(loaded, toolkits));
-      console.log(`[composio] grouped connected:`, connected);
     } catch (err) {
       console.warn("Composio: failed to load connected tools", err);
     }

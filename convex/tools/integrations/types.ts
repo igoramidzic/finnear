@@ -5,7 +5,7 @@ import type { ActionCtx } from "../../_generated/server";
 export type IntegrationResult = {
   tools: ToolSet;
   // toolkit slug -> tool names actually loaded for this user
-  // (e.g. "mem0" -> ["MEM0_ADD_MEMORY", "MEM0_SEARCH_MEMORIES"]).
+  // (e.g. "gmail" -> ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]).
   connected: Record<string, string[]>;
 };
 
