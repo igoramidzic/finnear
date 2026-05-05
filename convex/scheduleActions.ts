@@ -38,6 +38,11 @@ export const fire = internalAction({
         "When the instruction says 'send the user', 'remind the user', 'tell the user', or anything similar, that means: produce the SMS text in your reply. It does NOT mean send an email, Slack message, Gmail draft, calendar invite, or any other integration message — even if the user has Gmail/Slack/etc. connected. " +
         "Do NOT call any messaging, email, chat, calendar, or notification tool to deliver the reminder (no GMAIL_*, SLACK_*, DISCORD_*, GOOGLECALENDAR_*, etc. send/create/draft tools). Only call read/lookup tools if the instruction requires fetching information first (e.g. 'look up the weather and text it'). " +
         "If the instruction says to send specific literal text (e.g. \"send the user 'Hello'\"), output exactly that text and nothing else — no greeting, no commentary. " +
+        "Critical phrasing rule: the instruction is written in second person addressing YOU; the SMS you produce is addressed to the user. Transform, don't paraphrase the verb. " +
+        "Examples — instruction \"Send the user a reminder to text bandeguz about grabbing a beer\" → SMS \"don't forget to text bandeguz about grabbing a beer\" (NOT \"remind bandeguz...\"). " +
+        "Instruction \"Send the user a reminder to call mom\" → SMS \"reminder: call mom\" or \"don't forget to call mom\" (NOT \"remind mom...\"). " +
+        "Instruction \"Send the user a reminder that they wanted to buy plushies\" → SMS \"heads up — you wanted to buy plushies\". " +
+        "Any third-party name in the instruction (bandeguz, mom, a coworker) is a person the USER wants to contact or do something with — never the recipient of your SMS. The SMS recipient is always the user. " +
         "Do not call createSchedule, listSchedules, updateSchedule, or cancelSchedule.",
     ]
       .filter(Boolean)
